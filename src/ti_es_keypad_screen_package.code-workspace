@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "\\\\wsl.localhost\\Ubuntu\\home\\luxo\\school\\ros2\\ti_es_keypad_screen_package"
+		},
+		{
+			"name": "arduino_keypad_screen",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
