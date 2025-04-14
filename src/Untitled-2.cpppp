@@ -1,0 +1,161 @@
+#include <Wire.h>
+#include <Keypad.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_GFX.h>
+#include <LiquidCrystal_I2C.h>
+#include <stdio.h>
+#include <string.h>
+
+#define I2C_ADDRESS 0x08
+#define SSD1306_I2C_ADDRESS 0x3C
+#define LCD_I2C_ADDRESS 0x27
+
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+
+byte rowPins[ROWS] = {2, 3, 4, 5};
+byte colPins[COLS] = {7, 6, 8, 9};
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+String receivedData = "";
+char lastKey = '\0';
+String targetDevice = "both";
+
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 16, 2);
+
+void sendKey() {
+  Wire.write(lastKey);
+  lastKey = '\0';
+}
+
+void receiveEvent(int bytes) {
+  receivedData = "";  // Clear before receiving new data
+  while (Wire.available()) {
+    char c = Wire.read();
+    if (c != '\0') {
+      receivedData += c;
+    }
+  }
+  Serial.println(receivedData);
+}
+
+
+void setup() {
+  Wire.begin(I2C_ADDRESS);
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(sendKey);
+  Serial.begin(9600);
+  
+  if (!display.begin(SSD1306_I2C_ADDRESS, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    while (true);
+  }
+  
+  lcd.init();
+  lcd.backlight();
+  
+  lcd.init();
+  lcd.backlight();
+
+  display.display();
+  //delay(2000);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Ready");
+}
+
+
+
+void displayText(String text, int textSize) {
+  String newText = "";
+  
+  for (int i = 0; i < text.length(); i++) {
+    if (text[i] == 'o' && text[i+1] == 'l' && text[i+2] == 'e' && text[i+3] == 'd' && text[i+4] == ':') {
+      targetDevice = "oled";
+      for (int j = i+5; j < text.length(); j++) {
+        newText += text[j];
+      }
+      break;
+    } else if (text[i] == 'l' && text[i+1] == 'c' && text[i+2] == 'd' && text[i+3] == ':') {
+      targetDevice = "lcd";
+      for (int j = i+4; j < text.length(); j++) {
+        newText += text[j];
+      }
+      break;
+    } else if (text[i] == 'b' && text[i+1] == 'o' && text[i+2] == 't' && text[i+3] == 'h' && text[i+4] == ':') {
+      targetDevice = "both";
+      for (int j = i+5; j < text.length(); j++) {
+        newText += text[j];
+      }
+      break;
+    } else {
+      newText = text; // No prefix found
+    }
+  }
+  
+  if (targetDevice == "oled" || targetDevice == "both") {
+    display.clearDisplay();
+    display.setTextSize(textSize);
+    display.setCursor(0, 0);
+    display.print(newText);
+    display.display();
+  }
+  
+  if (targetDevice == "lcd" || targetDevice == "both") {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+
+    const char* charArray = newText.c_str();
+    int i = 0;
+
+    // Print first row (first 16 characters)
+    while (i < 16 && charArray[i] != '\0') {
+        lcd.print(charArray[i]);
+        i++;
+    }
+
+    // If there are more characters, move to the second row
+    if (charArray[i] != '\0') {
+        lcd.setCursor(0, 1); // Move to the second row
+
+        // Print second row (next 16 characters)
+        int column = 0;
+        while (i < 32 && charArray[i] != '\0') {
+            lcd.print(charArray[i]);
+            i++;
+            column++;
+        }
+    }
+}
+
+}
+
+
+void loop() {
+  char key = keypad.getKey();
+  if (key) {
+    lastKey = key;
+    Serial.print("Key Pressed: ");
+    Serial.println(key);
+    displayText(String(key), 2);
+  }
+
+  if (receivedData.length() > 0) {
+    displayText(receivedData, 2);
+    receivedData = "";
+  }
+}
+
+
