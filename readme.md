@@ -20,12 +20,12 @@ Target board: **DFRobot FireBeetle 2 ESP32-E**
 - `LiquidCrystal_I2C`: For LCD display control.
 
 Install libraries through the Arduino Library Manager:
-'''
+```
 Adafruit SSD1306
 Adafruit GFX
 Keypad
 LiquidCrystal I2C
-'''
+```
 
 ## Logic Handling via ROS
 
@@ -44,11 +44,11 @@ Due to memory constraints on the ESP32, message parsing and routing logic are of
 
 ### Example UART Messages
 
-'''
+```
 oled:Hello from ROS|
 lcd:Line1 Line2 on LCD|
 both:Universal Msg|
-'''
+```
 
 Each message must end with `|` to be recognized as complete.
 
