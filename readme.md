@@ -1,26 +1,35 @@
+```
+# I2C ROS Node for DFRobot FireBeetle 2 ESP32-E
+
 ## Overview
 
-This ROS node handles communication between a ROS-based system and an Arduino connected via I2C. It processes input commands and relays information to the Arduino for display on connected devices.
+This ROS 2 node facilitates communication between a ROS-based system and an **ESP32 (DFRobot FireBeetle 2 ESP32-E)** over I2C. It sends display commands and retrieves keypad inputs from the ESP, which interfaces with both an OLED and an LCD.
 
 ## Setup
 
 ### Dependencies
 
-- **ROS 2**: Ensure ROS 2 is installed and properly configured.
-- **Python Libraries**: `rclpy`, `smbus2` (On Ubuntu, you can install `smbus2` with `apt install python3-smbus2`).
+- **ROS 2** (e.g., Foxy, Humble)
+- **Python Libraries**:
+  - `rclpy`
+  - `smbus2`  
+    > On Ubuntu, install via:  
+    ```
+    sudo apt install python3-smbus2
+    ```
 
 ### Installation
 
-1. Clone the repository into your ROS workspace:
+1. Clone the package into your ROS workspace:
    ```
    cd ~/your_ros_workspace/src
    git clone <repository-url>
    ```
-2. Install required Python packages (if not on Ubuntu):
+2. Install required Python libraries (if needed):
    ```
    pip install smbus2
    ```
-3. Build the package:
+3. Build the workspace:
    ```
    cd ~/your_ros_workspace
    colcon build
@@ -28,34 +37,40 @@ This ROS node handles communication between a ROS-based system and an Arduino co
 
 ## Node Details
 
-### Initialization
-
 - **Node Name**: `i2c_publisher`
-- **Publisher**: `/keypad_input` (std_msgs/String) - Publishes keys pressed on the keypad.
-- **Subscription**: `/send_to_arduino` (std_msgs/String) - Subscribes to messages to send to Arduino.
+- **Publisher**: `/keypad_input` (`std_msgs/String`)  
+  Publishes keypresses from the ESP keypad.
+- **Subscriber**: `/send_to_ESP` (`std_msgs/String`)  
+  Subscribes to messages that will be sent to the ESP for display.
 
-### Communication
+## Communication
 
-- **I2C Bus**: Communicates with Arduino using I2C. Default address is `0x08`.
-- **Sending**: Messages are sent to the Arduino, with logic to split messages into chunks if they exceed 32 bytes.
-- **Receiving**: Reads single key inputs from the Arduino and publishes them on the ROS topic.
+- **I2C Address**: Defaults to `0x08`
+- **Sending**: Messages are prefixed with:
+  - `oled:`, `lcd:`, or `both:` to control which display the message appears on.
+- **Batching**: Long messages are automatically split into 32-byte chunks before being sent.
+- **Receiving**: Reads single-character keypad inputs from the ESP and republishes them to the ROS topic.
 
 ## Functions
 
-- `send_to_arduino(msg)`: Processes and sends text commands to the Arduino with appropriate prefixes.
-- `send_in_batches(i2c_addr, register, message)`: Sends messages to Arduino in 32-byte chunks for reliability.
-- `read_keypad()`: Reads and publishes a single key press from the Arduino.
+- `send_to_arduino(msg)`: Formats and sends display messages to the ESP.
+- `send_in_batches(i2c_addr, register, message)`: Splits long messages into I2C-friendly chunks (≤32 bytes).
+- `read_keypad()`: Reads and publishes a single key press.
 
 ## Logic Handling
 
-- Manages prefix logic such as `"oled:"`, `"lcd:"`, and `"both:"` on the ROS side to save Arduino RAM.
-- Truncates text for the LCD display to prevent overflow.
+- Prefixes like `"oled:"`, `"lcd:"`, and `"both:"` help the ESP decide which display(s) to use.
+- The ESP truncates text beyond display limits to avoid overflow (especially for the 16x2 LCD).
+- ROS handles display logic to minimize memory usage on the microcontroller.
 
 ## Usage
 
-1. Run the node using:
+1. Ensure the ESP32 is flashed with the Arduino sketch and powered on.
+2. Run the ROS node:
    ```
    ros2 run <package_name> i2cpublisher
    ```
-2. Ensure the Arduino is connected and functioning as intended.
-3. Interact with the node via the ROS topics for sending and receiving data.
+3. Use ROS topics to send and receive data:
+   - Publish messages to `/send_to_ESP` to display on the ESP.
+   - Subscribe to `/keypad_input` to receive keypad input from the ESP.
+```
