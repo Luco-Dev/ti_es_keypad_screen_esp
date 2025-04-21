@@ -1,4 +1,3 @@
-```
 # I2C ROS Node for DFRobot FireBeetle 2 ESP32-E
 
 ## Overview
@@ -73,4 +72,3 @@ This ROS 2 node facilitates communication between a ROS-based system and an **ES
 3. Use ROS topics to send and receive data:
    - Publish messages to `/send_to_ESP` to display on the ESP.
    - Subscribe to `/keypad_input` to receive keypad input from the ESP.
-```
