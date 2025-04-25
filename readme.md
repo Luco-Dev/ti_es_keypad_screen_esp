@@ -1,59 +1,84 @@
-## Overview
-This Arduino sketch interfaces with a keypad, an OLED display, and an LCD using I2C communication. It's designed to relay keypad inputs to a connected system and display messages from an external source. Due to RAM limitations on the Arduino, some logic processing is handled by a ROS (Robot Operating System) node.
+# ESP32 Keypad & Display Interface for ROS 2
 
-Target board: **DFRobot FireBeetle 2 ESP32-E**
+## Introduction
 
-## Setup
+This Arduino sketch is designed for the **DFRobot FireBeetle 2 ESP32-E**, acting as a bridge between a **keypad**, **OLED**, and **LCD**, while communicating with a **ROS 2 node** over UART. Display rendering is handled on the ESP, while logic and formatting are offloaded to ROS due to limited memory on the microcontroller.
 
-### Hardware
+Project repo:  
+[https://github.com/Luco-Dev/ti_es_keypad_screen_esp](https://github.com/Luco-Dev/ti_es_keypad_screen_esp)
 
-- **Keypad**: Connected to digital pins 2, 4, 25, 26 (rows) and 18, 13, 14, 15 (columns).
-- **OLED Display**: I2C at address `0x3C`.
-- **LCD Display**: I2C at address `0x27`.
-- **UART Communication**: Uses UART2 (TX=1, RX=3) for serial communication with external systems.
+## Packages
 
-### Libraries
+No external packages are used beyond standard Arduino libraries available through the Arduino Library Manager.
 
-- `Wire.h`: For I2C communication.
-- `Keypad.h`: For keypad interfacing.
-- `Adafruit_SSD1306` and `Adafruit_GFX`: For OLED display control.
-- `LiquidCrystal_I2C`: For LCD display control.
+Required libraries:
+- Adafruit SSD1306  
+- Adafruit GFX  
+- Keypad  
+- LiquidCrystal I2C
 
-Install libraries through the Arduino Library Manager:
-```
-Adafruit SSD1306
-Adafruit GFX
-Keypad
-LiquidCrystal I2C
-```
+Include these in your sketch:
+'''
+#include <Wire.h>
+#include <Keypad.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <LiquidCrystal_I2C.h>
+'''
 
-## Logic Handling via ROS
+## Hardware that interacts with it
 
-Due to memory constraints on the ESP32, message parsing and routing logic are offloaded to a ROS 2 node. The ROS node processes incoming data and tags it with the appropriate display prefix (`oled:`, `lcd:`, `both:`), which the Arduino then parses and displays.
+- **Keypad**  
+  - Row pins: D2, D4, D25, D26  
+  - Column pins: D18, D13, D14, D15
 
-## Key Functions
+- **OLED Display**  
+  - I2C address: `0x3C`  
+  - 128x64 resolution  
 
-- `setup()`: Initializes UART, displays, and keypad.
-- `loop()`: Reads keypad input and incoming UART messages, dispatches to display.
-- `displayText(const char* text, int textSize)`: Displays text on OLED, LCD, or both depending on the prefix (`oled:`, `lcd:`, `both:`).
+- **LCD Display**  
+  - I2C address: `0x27`  
+  - 16x2 characters  
 
-## Usage
+- **ROS 2 Host (e.g. Raspberry Pi)**  
+  - Communicates over UART2 (TX=1, RX=3)
 
-- **Keypad Input**: Pressed keys are sent via UART to an external system (e.g., ROS).
-- **External Messages**: The Arduino receives messages over UART ending with `|` and displays them based on the prefix.
+## Installation Guide
 
-### Example UART Messages
+1. Clone this repository or copy the files into a PlatformIO or Arduino IDE project:
+   [ESP Sketch Folder](https://github.com/Luco-Dev/ti_es_keypad_screen_esp/tree/ea5f72bb9a9d6f243bc620badf1091c040fc443f)
 
-```
-oled:Hello from ROS|
-lcd:Line1 Line2 on LCD|
-both:Universal Msg|
-```
+2. Install the required libraries through the Arduino Library Manager.
 
-Each message must end with `|` to be recognized as complete.
+3. Connect the hardware as described above.
 
-## Notes
+4. Flash the sketch to the ESP32.
 
-- OLED uses 128x64 resolution and can display larger fonts.
-- LCD is limited to 16x2 characters; text longer than this is truncated.
-- Communication is one-way UART for keypresses and UART read for display instructions.
+5. On the ROS host, run the companion ROS 2 node that communicates via UART and handles display logic:
+   [ROS Node Repo](https://github.com/Luco-Dev/ti_es_keypad_screen_ros)
+
+## Configuration Options
+
+Messages sent to the ESP over UART must be formatted using a specific prefix to indicate the display target:
+
+- `oled:` – Show only on OLED  
+- `lcd:` – Show only on LCD  
+- `both:` – Attempt to show on both  
+- All messages must end with a pipe (`|`) character to indicate the end of transmission.
+
+### Example messages from ROS:
+
+'''
+oled:Moonrise detected at 21:12|
+lcd:Target: Mars|
+both:Starting scan now...|
+'''
+
+Keypresses from the keypad are automatically transmitted to the ROS node as single characters.
+
+## Author
+
+Developed by **Luco Berkouwer**  
+This project is part of a modular telescope control system using ROS 2 and embedded I2C/UART hardware.  
+
+Feel free to fork, extend, or repurpose this code for your own microcontroller-based ROS projects!
